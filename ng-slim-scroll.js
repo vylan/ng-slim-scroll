@@ -5,7 +5,7 @@
  */
 
 angular.module('ngSlimScroll', [])
-    .directive('slimScroll', ['$window', '$document', '$timeout', function ($window, $document, $timeout) {
+    .directive('slimScroll', ['$window', '$document', '$timeout', function($window, $document, $timeout) {
         var init_attribute = "data-slim-scroll-init";
         var defaults = {
             minHeight: 25,
@@ -18,14 +18,14 @@ angular.module('ngSlimScroll', [])
             restrict: 'A',
             transclude: true,
             replace: true,
-            scope: {options: '='},
+            scope: { options: '=' },
             template: '<div><div class="slim-scroll-wrapper" data-ng-transclude></div></div>',
-            link: function ($scope, element) {
+            link: function($scope, element) {
                 element.removeAttr(init_attribute);
 
                 var options = angular.extend({}, defaults, $scope.options);
                 //continue once DOM is ready
-                $timeout(function () {
+                function perform() {
                     var wrapperDomElement = element.children()[0],
                         wrapperElement = angular.element(wrapperDomElement);
                     if (wrapperDomElement.offsetHeight < wrapperDomElement.scrollHeight) {
@@ -47,26 +47,22 @@ angular.module('ngSlimScroll', [])
 
                         //functions
                         var values = {},
-                            getTop = function (el) {
+                            getTop = function(el) {
                                 var t = document.documentElement.scrollTop;
                                 return el.getBoundingClientRect().top + (t ? t : document.body.scrollTop);
                             },
-                            getReposition = function (h) {
+                            getReposition = function(h) {
                                 var x = parseInt(scrollbarElement[0].style.top.replace("%", "")) * h / 100;
                                 return x ? x : 0;
                             },
-                            assignValues = function () {
+                            assignValues = function() {
                                 values.height = scrollbarContainerElement[0].offsetHeight;
                                 values.scrollHeight = wrapperDomElement.scrollHeight;
 
                                 values.position = (values.height / values.scrollHeight) * 100;
                                 values.scrollbarHeight = values.scrollHeight * values.height / 100;
 
-                                values.scrollPosition = options.fixedHeight
-                                    ? (options.fixedHeight / values.height * 100)
-                                    : (values.scrollbarHeight < options.minHeight
-                                    ? options.minHeight / values.height * 100
-                                    : values.position);
+                                values.scrollPosition = options.fixedHeight ? (options.fixedHeight / values.height * 100) : (values.scrollbarHeight < options.minHeight ? options.minHeight / values.height * 100 : values.position);
 
                                 values.remainder = 100 - values.scrollPosition;
                                 values.x = (values.scrollHeight - values.height) * ((values.scrollPosition - values.position) / (100 - values.position));
@@ -75,7 +71,7 @@ angular.module('ngSlimScroll', [])
 
                                 values.reposition = getReposition(values.height);
                             },
-                            setScroll = function (e) {
+                            setScroll = function(e) {
                                 e = e || event;
                                 var el = e.target || event.srcElement,
                                     p = el.parentElement || el.parentNode;
@@ -90,7 +86,7 @@ angular.module('ngSlimScroll', [])
                                 wrapperDomElement.scrollTop = top * values.heightRate;
                                 scrollbarContainerElement.addClass(options.specialClass);
                             },
-                            beginScroll = function (e) {
+                            beginScroll = function(e) {
                                 var sel = $window.getSelection ? $window.getSelection() : $window.document.selection;
                                 if (sel) {
                                     if (sel.removeAllRanges) sel.removeAllRanges();
@@ -110,7 +106,7 @@ angular.module('ngSlimScroll', [])
 
                                 wrapperElement.addClass('unselectable');
                             },
-                            moveScroll = function (e) {
+                            moveScroll = function(e) {
                                 e = e || event;
                                 var eY = e.pageY || e.clientY,
                                     top = (values.reposition + eY - values.firstY) / values.height * 100;
@@ -125,7 +121,7 @@ angular.module('ngSlimScroll', [])
                                 }
                                 scrollbarContainerElement.removeClass(options.specialClass);
                             },
-                            endScroll = function (e) {
+                            endScroll = function(e) {
 
                                 $document.unbind('mousemove', moveScroll);
                                 $document.unbind('mouseup', endScroll);
@@ -134,7 +130,7 @@ angular.module('ngSlimScroll', [])
                                 wrapperElement.removeClass('unselectable');
                                 scrollbarContainerElement.addClass(options.specialClass);
                             },
-                            doScroll = function (e) {
+                            doScroll = function(e) {
                                 if (!values) return;
                                 scrollbarContainerElement.removeClass(options.specialClass);
                                 scrollbarElement[0].style.top = wrapperDomElement.scrollTop / values.heightRate + '%';
@@ -153,15 +149,19 @@ angular.module('ngSlimScroll', [])
 
                         assignValues();
 
-                        $scope.$on('$destroy', function () {
+                        $scope.$on('$destroy', function() {
                             scrollbarElement.unbind('mousedown');
                             scrollbarContainerElement.unbind('click');
                             wrapperElement.unbind('scroll');
                             angular.element($window).unbind('resize', assignValues);
                         });
+                    } else {
+                        $timeout(function() {
+                            perform();
+                        }, 100)
                     }
-                })
-
+                }
+                $timeout(function() { perform(); });
             }
         }
     }]);
